@@ -1,150 +1,137 @@
 import Link from "next/link";
+import { mockProjects, getAllPriorityTasks } from "@/lib/mock-data";
+import { ProjectCard } from "@/components/project-card";
 
-const mockProjects = [
-  {
-    id: "oracle-health",
-    name: "Oracle Health Integration",
-    description: "Integration project with Oracle Health systems",
-    color: "#ef4444",
-    tasksTotal: 12,
-    tasksDone: 2,
-    nextDeadline: "2026-03-15",
-  },
-];
+const priorityColor: Record<string, string> = {
+  URGENT: "bg-danger",
+  HIGH: "bg-warning",
+  MEDIUM: "bg-accent",
+  LOW: "bg-success",
+};
 
-const upcomingDeadlines = [
-  {
-    title: "Requirements finalisation",
-    project: "Oracle Health Integration",
-    date: "2026-03-01",
-    status: "IN_PROGRESS",
-  },
-  {
-    title: "Architecture review",
-    project: "Oracle Health Integration",
-    date: "2026-03-15",
-    status: "TODO",
-  },
-];
+const priorityLabel: Record<string, string> = {
+  URGENT: "text-danger",
+  HIGH: "text-warning",
+  MEDIUM: "text-accent",
+  LOW: "text-success",
+};
+
+const statusLabel: Record<string, string> = {
+  TODO: "To Do",
+  IN_PROGRESS: "In Progress",
+  IN_REVIEW: "In Review",
+};
+
+function getProjectName(projectId: string) {
+  return mockProjects.find((p) => p.id === projectId)?.name ?? projectId;
+}
 
 export default function DashboardPage() {
+  const priorityTasks = getAllPriorityTasks();
+
   return (
-    <div className="space-y-8">
-      {/* Welcome section */}
+    <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold">Welcome back</h2>
-        <p className="mt-1 text-muted">
-          Here&apos;s an overview of your projects and upcoming deadlines.
+        <h2 className="text-2xl font-bold">Dashboard</h2>
+        <p className="mt-1 text-sm text-muted">
+          Your top priorities and active projects at a glance.
         </p>
       </div>
 
-      {/* Stats cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: "Active Projects", value: "1", color: "bg-accent" },
-          { label: "Open Tasks", value: "10", color: "bg-warning" },
-          { label: "Due This Week", value: "3", color: "bg-danger" },
-          { label: "Completed", value: "2", color: "bg-success" },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="rounded-xl border border-border bg-card-bg p-5"
-          >
-            <div className="flex items-center gap-3">
-              <div className={`h-2 w-2 rounded-full ${stat.color}`} />
-              <span className="text-sm text-muted">{stat.label}</span>
-            </div>
-            <p className="mt-2 text-3xl font-bold">{stat.value}</p>
+      <div className="grid gap-6 lg:grid-cols-5">
+        {/* ── Left column: Priority Tasks ──────────────────── */}
+        <div className="lg:col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              Priority Tasks
+            </h3>
+            <span className="text-xs text-muted">{priorityTasks.length} open</span>
           </div>
-        ))}
-      </div>
 
-      {/* Projects list */}
-      <section>
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Projects</h3>
-          <Link
-            href="/projects"
-            className="text-sm text-accent hover:text-accent-hover"
-          >
-            View all
-          </Link>
+          <div className="rounded-xl border border-border bg-card-bg divide-y divide-border">
+            {priorityTasks.map((task) => (
+              <Link
+                key={task.id}
+                href={`/projects/${task.projectId}`}
+                className="flex items-start gap-3 px-4 py-3.5 transition-colors hover:bg-accent/5"
+              >
+                {/* Traffic light priority dot */}
+                <span
+                  className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${priorityColor[task.priority]}`}
+                  title={task.priority}
+                />
+
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium leading-tight truncate">
+                    {task.title}
+                  </p>
+                  <div className="mt-1 flex items-center gap-2 text-xs text-muted">
+                    <span className="truncate">
+                      {getProjectName(task.projectId)}
+                    </span>
+                    <span>·</span>
+                    <span className={priorityLabel[task.priority]}>
+                      {task.priority}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-right">
+                  <span className="text-[11px] text-muted">
+                    {statusLabel[task.status] ?? task.status}
+                  </span>
+                  {task.dueDate && (
+                    <p className="mt-0.5 text-[11px] text-muted">
+                      {new Date(task.dueDate).toLocaleDateString("en-GB", {
+                        day: "numeric",
+                        month: "short",
+                      })}
+                    </p>
+                  )}
+                </div>
+              </Link>
+            ))}
+
+            {priorityTasks.length === 0 && (
+              <div className="px-4 py-8 text-center text-sm text-muted">
+                No open tasks. Nice work!
+              </div>
+            )}
+          </div>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {mockProjects.map((project) => (
+
+        {/* ── Right column: Project Cards ──────────────────── */}
+        <div className="lg:col-span-3 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-muted">
+              Projects
+            </h3>
             <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="group rounded-xl border border-border bg-card-bg p-5 transition-shadow hover:shadow-md"
+              href="/projects"
+              className="text-xs text-accent hover:text-accent-hover"
             >
-              <div className="flex items-center gap-3">
-                <div
-                  className="h-3 w-3 rounded-full"
-                  style={{ backgroundColor: project.color }}
-                />
-                <h4 className="font-semibold group-hover:text-accent">
-                  {project.name}
-                </h4>
-              </div>
-              <p className="mt-2 text-sm text-muted">{project.description}</p>
-              <div className="mt-4 flex items-center justify-between text-xs text-muted">
-                <span>
-                  {project.tasksDone}/{project.tasksTotal} tasks done
-                </span>
-                <span>Next: {project.nextDeadline}</span>
-              </div>
-              {/* Progress bar */}
-              <div className="mt-2 h-1.5 w-full rounded-full bg-border">
-                <div
-                  className="h-1.5 rounded-full bg-accent"
-                  style={{
-                    width: `${(project.tasksDone / project.tasksTotal) * 100}%`,
-                  }}
-                />
+              View all
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {mockProjects.map((project) => (
+              <ProjectCard key={project.id} project={project} />
+            ))}
+
+            {/* New project placeholder */}
+            <Link
+              href="/projects/new"
+              className="flex items-center justify-center rounded-xl border-2 border-dashed border-border text-muted transition-colors hover:border-accent hover:text-accent min-h-[180px]"
+            >
+              <div className="text-center">
+                <span className="text-2xl leading-none">+</span>
+                <p className="mt-1 text-sm font-medium">New Project</p>
               </div>
             </Link>
-          ))}
-
-          {/* New project card */}
-          <Link
-            href="/projects/new"
-            className="flex items-center justify-center rounded-xl border-2 border-dashed border-border p-5 text-muted transition-colors hover:border-accent hover:text-accent"
-          >
-            <span className="text-2xl">+</span>
-            <span className="ml-2 text-sm font-medium">New Project</span>
-          </Link>
+          </div>
         </div>
-      </section>
-
-      {/* Upcoming deadlines */}
-      <section>
-        <h3 className="mb-4 text-lg font-semibold">Upcoming Deadlines</h3>
-        <div className="rounded-xl border border-border bg-card-bg">
-          {upcomingDeadlines.map((item, i) => (
-            <div
-              key={i}
-              className="flex items-center justify-between border-b border-border px-5 py-4 last:border-0"
-            >
-              <div>
-                <p className="font-medium">{item.title}</p>
-                <p className="text-sm text-muted">{item.project}</p>
-              </div>
-              <div className="flex items-center gap-4">
-                <span
-                  className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                    item.status === "IN_PROGRESS"
-                      ? "bg-accent/10 text-accent"
-                      : "bg-muted/10 text-muted"
-                  }`}
-                >
-                  {item.status.replace("_", " ")}
-                </span>
-                <span className="text-sm text-muted">{item.date}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
+      </div>
     </div>
   );
 }

@@ -1,20 +1,9 @@
 import Link from "next/link";
+import { getProjectById, getTopLevelTasks, mockProjects } from "@/lib/mock-data";
 
 interface ProjectPageProps {
   params: Promise<{ id: string }>;
 }
-
-const projectData = {
-  "oracle-health": {
-    name: "Oracle Health Integration",
-    description:
-      "Integration project with Oracle Health systems. Managing requirements, technical architecture, and implementation of health data exchange interfaces.",
-    color: "#ef4444",
-    status: "Active",
-    startDate: "2026-02-01",
-    targetDate: "2026-06-30",
-  },
-};
 
 const tabs = [
   { label: "Overview", href: "" },
@@ -25,8 +14,13 @@ const tabs = [
 
 export default async function ProjectPage({ params }: ProjectPageProps) {
   const { id } = await params;
-  const project =
-    projectData[id as keyof typeof projectData] ?? projectData["oracle-health"];
+  const project = getProjectById(id) ?? mockProjects[0];
+  const topTasks = getTopLevelTasks(project);
+  const done = topTasks.filter((t) => t.status === "DONE").length;
+  const inProgress = topTasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const todo = topTasks.filter(
+    (t) => t.status !== "DONE" && t.status !== "IN_PROGRESS" && t.status !== "CANCELLED"
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -86,9 +80,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <h3 className="font-semibold">Tasks</h3>
           <div className="mt-3 space-y-2 text-sm">
             {[
-              { label: "To Do", count: 6, color: "bg-muted" },
-              { label: "In Progress", count: 4, color: "bg-accent" },
-              { label: "Done", count: 2, color: "bg-success" },
+              { label: "To Do", count: todo, color: "bg-muted" },
+              { label: "In Progress", count: inProgress, color: "bg-accent" },
+              { label: "Done", count: done, color: "bg-success" },
             ].map((s) => (
               <div key={s.label} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -107,15 +101,15 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
           <div className="mt-3 space-y-3 text-sm">
             <div className="flex justify-between">
               <span className="text-muted">Allocated</span>
-              <span className="font-medium">£50,000</span>
+              <span className="font-medium">&pound;50,000</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Spent</span>
-              <span className="font-medium">£8,500</span>
+              <span className="font-medium">&pound;8,500</span>
             </div>
             <div className="flex justify-between">
               <span className="text-muted">Remaining</span>
-              <span className="font-medium text-success">£41,500</span>
+              <span className="font-medium text-success">&pound;41,500</span>
             </div>
             <div className="h-1.5 w-full rounded-full bg-border">
               <div

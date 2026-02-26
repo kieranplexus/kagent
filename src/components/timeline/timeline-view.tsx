@@ -1,271 +1,256 @@
 "use client";
 
 import { useState } from "react";
+import type { MockTask } from "@/lib/mock-data";
 
-interface TimelineTask {
-  id: string;
-  title: string;
-  type: "task" | "milestone";
-  startDate: string;
-  endDate?: string;
-  status: string;
-  priority: string;
-  row: number;
-  documents: { name: string; type: string }[];
-}
-
-const mockTasks: TimelineTask[] = [
-  {
-    id: "1",
-    title: "Requirements Gathering",
-    type: "task",
-    startDate: "2026-02-01",
-    endDate: "2026-03-01",
-    status: "IN_PROGRESS",
-    priority: "HIGH",
-    row: 0,
-    documents: [
-      { name: "Requirements_v1.docx", type: "document" },
-      { name: "Stakeholder_Notes.md", type: "document" },
-    ],
-  },
-  {
-    id: "2",
-    title: "API Scope Definition",
-    type: "task",
-    startDate: "2026-02-15",
-    endDate: "2026-03-15",
-    status: "TODO",
-    priority: "HIGH",
-    row: 1,
-    documents: [{ name: "API_Endpoints.xlsx", type: "spreadsheet" }],
-  },
-  {
-    id: "3",
-    title: "Architecture Review",
-    type: "milestone",
-    startDate: "2026-03-15",
-    status: "TODO",
-    priority: "URGENT",
-    row: 2,
-    documents: [
-      { name: "Architecture_Diagram.png", type: "image" },
-      { name: "Tech_Stack_Decision.md", type: "document" },
-    ],
-  },
-  {
-    id: "4",
-    title: "Development Sprint 1",
-    type: "task",
-    startDate: "2026-03-16",
-    endDate: "2026-04-15",
-    status: "TODO",
-    priority: "MEDIUM",
-    row: 0,
-    documents: [],
-  },
-  {
-    id: "5",
-    title: "Integration Testing",
-    type: "task",
-    startDate: "2026-04-16",
-    endDate: "2026-05-15",
-    status: "TODO",
-    priority: "MEDIUM",
-    row: 1,
-    documents: [],
-  },
-  {
-    id: "6",
-    title: "Go-Live",
-    type: "milestone",
-    startDate: "2026-06-30",
-    status: "TODO",
-    priority: "URGENT",
-    row: 2,
-    documents: [],
-  },
-];
-
-const statusColors: Record<string, string> = {
-  TODO: "bg-gray-400",
-  IN_PROGRESS: "bg-accent",
-  IN_REVIEW: "bg-warning",
-  DONE: "bg-success",
+// ── Traffic light priority colours ───────────────────────────────
+const priorityBg: Record<string, string> = {
+  URGENT: "bg-danger/15 border-danger/40",
+  HIGH: "bg-warning/15 border-warning/40",
+  MEDIUM: "bg-accent/15 border-accent/40",
+  LOW: "bg-success/15 border-success/40",
 };
 
-const months = [
-  "Feb 2026",
-  "Mar 2026",
-  "Apr 2026",
-  "May 2026",
-  "Jun 2026",
-  "Jul 2026",
-];
+const priorityDot: Record<string, string> = {
+  URGENT: "bg-danger",
+  HIGH: "bg-warning",
+  MEDIUM: "bg-accent",
+  LOW: "bg-success",
+};
 
-export function TimelineView({ projectId }: { projectId: string }) {
-  const [selectedTask, setSelectedTask] = useState<TimelineTask | null>(null);
+const priorityText: Record<string, string> = {
+  URGENT: "text-danger",
+  HIGH: "text-warning",
+  MEDIUM: "text-accent",
+  LOW: "text-success",
+};
+
+const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
+  TODO: { bg: "bg-muted/15", text: "text-muted", label: "To Do" },
+  IN_PROGRESS: { bg: "bg-accent/15", text: "text-accent", label: "In Progress" },
+  IN_REVIEW: { bg: "bg-warning/15", text: "text-warning", label: "In Review" },
+  DONE: { bg: "bg-success/15", text: "text-success", label: "Done" },
+  CANCELLED: { bg: "bg-muted/15", text: "text-muted", label: "Cancelled" },
+};
+
+interface TimelineViewProps {
+  projectId: string;
+  tasks: MockTask[];
+  projectColor: string;
+}
+
+export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
+  const [selectedTask, setSelectedTask] = useState<MockTask | null>(null);
+
+  // Only show top-level tasks, ordered by due date
+  const topLevelTasks = tasks
+    .filter((t) => t.parentTaskId === null)
+    .sort((a, b) => {
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if (a.dueDate) return -1;
+      return 1;
+    });
 
   return (
-    <div className="rounded-xl border border-border bg-card-bg">
-      {/* Timeline header - months */}
-      <div className="flex border-b border-border">
-        <div className="w-48 shrink-0 border-r border-border px-4 py-3 text-sm font-medium text-muted">
-          Tasks
-        </div>
-        <div className="flex flex-1">
-          {months.map((month) => (
-            <div
-              key={month}
-              className="flex-1 border-r border-border px-3 py-3 text-center text-xs font-medium text-muted last:border-0"
-            >
-              {month}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Timeline rows */}
-      <div className="relative">
-        {mockTasks.map((task) => (
-          <div
-            key={task.id}
-            className="flex border-b border-border last:border-0"
-          >
-            {/* Task label */}
-            <div className="flex w-48 shrink-0 items-center gap-2 border-r border-border px-4 py-4">
-              {task.type === "milestone" ? (
-                <span className="text-warning">◆</span>
-              ) : (
-                <span
-                  className={`h-2 w-2 rounded-full ${statusColors[task.status]}`}
-                />
-              )}
-              <span className="truncate text-sm font-medium">
-                {task.title}
-              </span>
-            </div>
-
-            {/* Timeline bar area */}
-            <button
-              onClick={() =>
-                setSelectedTask(selectedTask?.id === task.id ? null : task)
-              }
-              className="flex flex-1 items-center px-2 py-4 hover:bg-accent/5 text-left"
-            >
-              <div className="relative h-8 w-full">
-                {task.type === "milestone" ? (
-                  <div
-                    className="absolute top-1 h-6 w-6 rotate-45 bg-warning"
-                    style={{ left: "40%" }}
-                  />
-                ) : (
-                  <div
-                    className={`absolute top-1 h-6 rounded ${statusColors[task.status]} opacity-80`}
-                    style={{
-                      left: "5%",
-                      width: "35%",
-                    }}
-                  >
-                    <span className="absolute inset-0 flex items-center px-2 text-xs font-medium text-white">
-                      {task.title}
-                    </span>
-                  </div>
-                )}
-              </div>
-            </button>
-          </div>
+    <div className="space-y-4">
+      {/* Legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted">
+        <span className="font-medium">Priority:</span>
+        {(["URGENT", "HIGH", "MEDIUM", "LOW"] as const).map((p) => (
+          <span key={p} className="flex items-center gap-1.5">
+            <span className={`h-2 w-2 rounded-full ${priorityDot[p]}`} />
+            {p.charAt(0) + p.slice(1).toLowerCase()}
+          </span>
         ))}
       </div>
 
-      {/* Document drawer */}
-      {selectedTask && (
-        <div className="border-t-2 border-accent bg-card-bg">
-          <div className="flex items-center justify-between border-b border-border px-5 py-3">
-            <div className="flex items-center gap-3">
-              <span className="text-sm font-semibold">
-                {selectedTask.title}
-              </span>
-              <span
-                className={`rounded-full px-2 py-0.5 text-xs text-white ${statusColors[selectedTask.status]}`}
+      {/* Scrollable timeline track */}
+      <div className="relative rounded-xl border border-border bg-card-bg">
+        {/* Connecting line */}
+        <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 mx-6 pointer-events-none" />
+
+        <div className="flex overflow-x-auto gap-4 p-6 scroll-smooth">
+          {topLevelTasks.map((task, i) => {
+            const isDone = task.status === "DONE";
+            const status = statusStyles[task.status] ?? statusStyles.TODO;
+            const isSelected = selectedTask?.id === task.id;
+
+            return (
+              <button
+                key={task.id}
+                onClick={() =>
+                  setSelectedTask(isSelected ? null : task)
+                }
+                className={`
+                  relative flex flex-col shrink-0 w-52 rounded-lg border p-4 text-left
+                  transition-all hover:shadow-md
+                  ${priorityBg[task.priority]}
+                  ${isSelected ? "ring-2 ring-accent shadow-md" : ""}
+                  ${isDone ? "opacity-60" : ""}
+                `}
               >
-                {selectedTask.status.replace("_", " ")}
+                {/* Sequence connector dot */}
+                <div
+                  className="absolute -left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full border-2 border-card-bg"
+                  style={{ backgroundColor: projectColor }}
+                />
+
+                {/* Task number */}
+                <span className="text-[10px] font-mono text-muted mb-1">
+                  #{i + 1}
+                </span>
+
+                {/* Title */}
+                <h4
+                  className={`text-sm font-semibold leading-snug ${isDone ? "line-through" : ""}`}
+                >
+                  {task.title}
+                </h4>
+
+                {/* Priority + status row */}
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="flex items-center gap-1">
+                    <span
+                      className={`h-2 w-2 rounded-full ${priorityDot[task.priority]}`}
+                    />
+                    <span className={`text-[10px] font-medium ${priorityText[task.priority]}`}>
+                      {task.priority}
+                    </span>
+                  </span>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-medium ${status.bg} ${status.text}`}>
+                    {status.label}
+                  </span>
+                </div>
+
+                {/* Due date */}
+                {task.dueDate && (
+                  <p className="mt-2 text-[11px] text-muted">
+                    Due{" "}
+                    {new Date(task.dueDate).toLocaleDateString("en-GB", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </p>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Task detail panel */}
+      {selectedTask && (
+        <TaskDetailPanel
+          task={selectedTask}
+          subtasks={tasks.filter((t) => t.parentTaskId === selectedTask.id)}
+          onClose={() => setSelectedTask(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function TaskDetailPanel({
+  task,
+  subtasks,
+  onClose,
+}: {
+  task: MockTask;
+  subtasks: MockTask[];
+  onClose: () => void;
+}) {
+  const status = statusStyles[task.status] ?? statusStyles.TODO;
+
+  return (
+    <div className="rounded-xl border border-border bg-card-bg overflow-hidden">
+      {/* Header bar */}
+      <div className="flex items-center justify-between border-b border-border px-5 py-3">
+        <div className="flex items-center gap-3">
+          <span className={`h-3 w-3 rounded-full ${priorityDot[task.priority]}`} />
+          <h3 className="font-semibold">{task.title}</h3>
+          <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${status.bg} ${status.text}`}>
+            {status.label}
+          </span>
+        </div>
+        <button
+          onClick={onClose}
+          className="rounded-lg px-3 py-1 text-sm text-muted transition-colors hover:bg-border hover:text-foreground"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="grid gap-6 p-5 sm:grid-cols-2">
+        {/* Info */}
+        <div className="space-y-3 text-sm">
+          <h4 className="font-semibold text-xs uppercase tracking-wide text-muted">
+            Details
+          </h4>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <span className="text-muted">Priority</span>
+              <span className={`font-medium ${priorityText[task.priority]}`}>
+                {task.priority}
               </span>
             </div>
-            <button
-              onClick={() => setSelectedTask(null)}
-              className="text-muted hover:text-foreground"
-            >
-              Close
-            </button>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 p-5">
-            {/* Documents */}
-            <div>
-              <h4 className="mb-3 text-sm font-semibold">
-                Attached Documents ({selectedTask.documents.length})
-              </h4>
-              {selectedTask.documents.length > 0 ? (
-                <div className="space-y-2">
-                  {selectedTask.documents.map((doc, i) => (
-                    <div
-                      key={i}
-                      className="flex items-center gap-3 rounded-lg border border-border p-3 transition-colors hover:bg-accent/5"
-                    >
-                      <span className="text-lg">
-                        {doc.type === "spreadsheet"
-                          ? "📊"
-                          : doc.type === "image"
-                            ? "🖼"
-                            : "📄"}
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium">{doc.name}</p>
-                        <p className="text-xs text-muted">
-                          v1 — uploaded today
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted">
-                  No documents attached yet.
-                </p>
-              )}
-              <button className="mt-3 text-sm text-accent hover:text-accent-hover">
-                + Attach document
-              </button>
+            <div className="flex justify-between">
+              <span className="text-muted">Status</span>
+              <span className={status.text}>{status.label}</span>
             </div>
-
-            {/* Details */}
-            <div>
-              <h4 className="mb-3 text-sm font-semibold">Details</h4>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted">Type</span>
-                  <span className="capitalize">{selectedTask.type}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Priority</span>
-                  <span>{selectedTask.priority}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted">Start</span>
-                  <span>{selectedTask.startDate}</span>
-                </div>
-                {selectedTask.endDate && (
-                  <div className="flex justify-between">
-                    <span className="text-muted">End</span>
-                    <span>{selectedTask.endDate}</span>
-                  </div>
-                )}
+            {task.dueDate && (
+              <div className="flex justify-between">
+                <span className="text-muted">Due Date</span>
+                <span>
+                  {new Date(task.dueDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric",
+                  })}
+                </span>
               </div>
-            </div>
+            )}
+            {task.assignee && (
+              <div className="flex justify-between">
+                <span className="text-muted">Assignee</span>
+                <span>{task.assignee}</span>
+              </div>
+            )}
           </div>
         </div>
-      )}
+
+        {/* Subtasks */}
+        <div className="space-y-3 text-sm">
+          <h4 className="font-semibold text-xs uppercase tracking-wide text-muted">
+            Subtasks ({subtasks.length})
+          </h4>
+          {subtasks.length > 0 ? (
+            <div className="space-y-2">
+              {subtasks.map((st) => {
+                const stStatus = statusStyles[st.status] ?? statusStyles.TODO;
+                return (
+                  <div
+                    key={st.id}
+                    className="flex items-center gap-2 rounded-lg border border-border p-2.5"
+                  >
+                    <span
+                      className={`h-2 w-2 shrink-0 rounded-full ${priorityDot[st.priority]}`}
+                    />
+                    <span className={`flex-1 text-xs ${st.status === "DONE" ? "line-through text-muted" : ""}`}>
+                      {st.title}
+                    </span>
+                    <span className={`text-[10px] font-medium ${stStatus.text}`}>
+                      {stStatus.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-muted">No subtasks yet.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
