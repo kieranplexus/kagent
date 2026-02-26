@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { mockProjects, getAllPriorityTasks } from "@/lib/mock-data";
+import { mockProjects, getAllPriorityTasks, getTodaysFocus } from "@/lib/mock-data";
 import { ProjectCard } from "@/components/project-card";
+import { TodaysFocus } from "@/components/todays-focus";
 
 const priorityColor: Record<string, string> = {
   URGENT: "bg-danger",
@@ -28,6 +29,7 @@ function getProjectName(projectId: string) {
 
 export default function DashboardPage() {
   const priorityTasks = getAllPriorityTasks();
+  const focusItems = getTodaysFocus();
 
   return (
     <div className="space-y-6">
@@ -36,6 +38,11 @@ export default function DashboardPage() {
         <p className="mt-1 text-sm text-muted">
           Your top priorities and active projects at a glance.
         </p>
+      </div>
+
+      {/* ── Today's Focus: 15% of viewport height ──────── */}
+      <div style={{ minHeight: "15vh" }}>
+        <TodaysFocus items={focusItems} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-5">
