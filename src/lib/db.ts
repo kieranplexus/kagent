@@ -1,23 +1,13 @@
-// Database client - configured when a PostgreSQL connection is available.
-// For Prisma v7, an adapter or accelerateUrl must be provided.
-// See: https://www.prisma.io/docs/orm/prisma-client
-//
-// Usage:
-//   import { db } from "@/lib/db";
-//   const users = await db.user.findMany();
-
 import { PrismaClient } from "@/generated/prisma/client";
+import { PrismaPg } from "@prisma/adapter-pg";
 
-let prismaInstance: PrismaClient | null = null;
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
-export function getDb(): PrismaClient {
-  if (!prismaInstance) {
-    throw new Error(
-      "Database not configured. Set DATABASE_URL or provide an adapter in src/lib/db.ts"
-    );
-  }
-  return prismaInstance;
+function createPrismaClient() {
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
+  return new PrismaClient({ adapter });
 }
 
-// Will be initialised once database connection is configured
-export const db = null as unknown as PrismaClient;
+export const db = globalForPrisma.prisma ?? createPrismaClient();
+
+if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
