@@ -1,60 +1,50 @@
-# Oracle Health Integration — Initial Requirements
+# Oracle Health Integration — FHIR Resource Requirements
 
-*Status: Draft — being gathered*
-*Last updated: 2026-02-26*
+> Last updated: February 26, 2026
 
-## 1. Integration Scope
+## Phase 1 — Read-Only FHIR Resources
 
-### 1.1 Data Domains
-- **Patient Demographics** — Retrieve and sync patient records
-- **Clinical Documents** — CDA and FHIR document exchange
-- **Appointments** — Read/write appointment scheduling
-- **Lab Results** — Receive and display lab/diagnostic results
-- **Medications** — Medication lists, prescriptions, administration records
-- **Allergies** — Patient allergy and intolerance data
-- **Encounters** — Episode of care and visit tracking
+| Resource | Access | Purpose |
+|----------|--------|---------|
+| Patient | Read | MRN-based patient lookup and identity verification |
+| Encounter | Read | Visit/episode context for payment association |
+| Account | Read | Patient account context |
 
-### 1.2 Integration Patterns
-- **Real-time API** — Synchronous REST calls for on-demand data retrieval
-- **Event-driven** — Pub/sub for data change notifications
-- **Batch** — Scheduled bulk data sync for reporting
+### Phase 1 Integration Pattern
+- Standalone SMART-on-FHIR app on secondary screen
+- MRN-based patient lookup verified against Millennium FHIR API
+- Read-only access only
+- Manual payment amount entry by staff
+- Payment execution via IPOS Systems (Dejavoo) / PayTrac
+- Card data never enters BDP environment
+- Offline reconciliation reporting to hospital finance team
+- No write-back to Millennium
 
-## 2. Technical Requirements
+## Phase 2 — Additional Resources (after Phase 1 deployment)
 
-### 2.1 API Standards
-- FHIR R4 (preferred)
-- HL7 v2 (if FHIR not available for specific resources)
-- OAuth 2.0 for authentication
-- SMART on FHIR for clinical app authorisation
+| Resource | Access | Purpose |
+|----------|--------|---------|
+| Invoice | Read | Balance retrieval for auto-population of payment amounts |
+| ChargeItem | Read | Charge details for payment context |
+| PaymentNotice | Write | Real-time payment status written to Millennium |
+| PaymentReconciliation | Write | Payment reconciliation records in Millennium |
 
-### 2.2 Security
-- TLS 1.2+ for all communications
-- AES-256 encryption at rest
-- Role-based access control
-- Full audit trail for data access
-- Data residency: UK (or as per NHS requirements)
+### Phase 2 Additional Capabilities
+- Balance retrieval and auto-population of payment amounts
+- Real-time payment status written back to Millennium
+- Optional EHR Launch mode (embedded in PowerChart)
+- Requires separate Oracle review and additional scope approval
+- Write scopes = higher scrutiny
 
-### 2.3 Performance
-- API response time: < 500ms (p95)
-- Throughput: 100 requests/second sustained
-- Availability: 99.9% uptime
+## Authentication
+- OAuth 2.0 / SMART on FHIR
+- SMART v1
+- Application Type: Provider
+- Type of Access: Online
+- Application Privacy: Public
 
-## 3. Compliance
-- NHS Digital standards
-- Data Protection Act 2018 / UK GDPR
-- Clinical safety (DCB0129 / DCB0160)
-- IG Toolkit compliance
-
-## 4. Open Questions
-- [ ] Which Oracle Health environment version is the target?
-- [ ] Is there an existing integration engine (e.g., Rhapsody, MuleSoft)?
-- [ ] What are the data retention requirements?
-- [ ] Are there existing HL7 v2 feeds that need migrating to FHIR?
-- [ ] What is the expected data volume (patients, transactions/day)?
-- [ ] Who is the Oracle Health technical contact?
-
-## 5. Dependencies
-- Oracle Health sandbox/test environment access
-- VPN or secure network connectivity setup
-- Clinical governance sign-off
-- Information governance assessment
+## Technical Notes
+- Default FHIR Version: R4
+- Products: Millennium — Oracle Health EHR APIs, Oracle Health FHIR APIs (R4, All)
+- Sandbox URL: `https://fhir-ehr-code.cerner.com/r4/ec2458f2-1e24-41c8-b71b-0e701af7583d`
+- Production URL format: `https://fhir-ehr.cerner.com/r4/{tenant-id}`
