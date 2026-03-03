@@ -29,6 +29,7 @@ const statusStyles: Record<string, { bg: string; text: string; label: string }> 
   TODO: { bg: "bg-muted/15", text: "text-muted", label: "To Do" },
   IN_PROGRESS: { bg: "bg-accent/15", text: "text-accent", label: "In Progress" },
   IN_REVIEW: { bg: "bg-warning/15", text: "text-warning", label: "In Review" },
+  WAITING: { bg: "bg-warning/15", text: "text-warning", label: "Waiting" },
   DONE: { bg: "bg-success/15", text: "text-success", label: "Done" },
   CANCELLED: { bg: "bg-muted/15", text: "text-muted", label: "Cancelled" },
 };
@@ -42,14 +43,9 @@ interface TimelineViewProps {
 export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
   const [selectedTask, setSelectedTask] = useState<MockTask | null>(null);
 
-  // Only show top-level tasks, ordered by due date
-  const topLevelTasks = tasks
-    .filter((t) => t.parentTaskId === null)
-    .sort((a, b) => {
-      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
-      if (a.dueDate) return -1;
-      return 1;
-    });
+  const sortedTasks = [...tasks].sort((a, b) =>
+    a.startDate.localeCompare(b.startDate)
+  );
 
   return (
     <div className="space-y-4">
@@ -70,7 +66,7 @@ export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
         <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-border -translate-y-1/2 mx-6 pointer-events-none" />
 
         <div className="flex overflow-x-auto gap-4 p-6 scroll-smooth">
-          {topLevelTasks.map((task, i) => {
+          {sortedTasks.map((task, i) => {
             const isDone = task.status === "DONE";
             const status = statusStyles[task.status] ?? statusStyles.TODO;
             const isSelected = selectedTask?.id === task.id;
@@ -122,17 +118,19 @@ export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
                   </span>
                 </div>
 
-                {/* Due date */}
-                {task.dueDate && (
-                  <p className="mt-2 text-[11px] text-muted">
-                    Due{" "}
-                    {new Date(task.dueDate).toLocaleDateString("en-GB", {
-                      day: "numeric",
-                      month: "short",
-                      year: "numeric",
-                    })}
-                  </p>
-                )}
+                {/* Date range */}
+                <p className="mt-2 text-[11px] text-muted">
+                  {new Date(task.startDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                  })}
+                  {" — "}
+                  {new Date(task.endDate).toLocaleDateString("en-GB", {
+                    day: "numeric",
+                    month: "short",
+                    year: "numeric",
+                  })}
+                </p>
               </button>
             );
           })}
@@ -143,7 +141,6 @@ export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
       {selectedTask && (
         <TaskDetailPanel
           task={selectedTask}
-          subtasks={tasks.filter((t) => t.parentTaskId === selectedTask.id)}
           onClose={() => setSelectedTask(null)}
         />
       )}
@@ -153,11 +150,9 @@ export function TimelineView({ tasks, projectColor }: TimelineViewProps) {
 
 function TaskDetailPanel({
   task,
-  subtasks,
   onClose,
 }: {
   task: MockTask;
-  subtasks: MockTask[];
   onClose: () => void;
 }) {
   const status = statusStyles[task.status] ?? statusStyles.TODO;
@@ -182,7 +177,6 @@ function TaskDetailPanel({
       </div>
 
       <div className="grid gap-6 p-5 sm:grid-cols-2">
-        {/* Info */}
         <div className="space-y-3 text-sm">
           <h4 className="font-semibold text-xs uppercase tracking-wide text-muted">
             Details
@@ -198,58 +192,45 @@ function TaskDetailPanel({
               <span className="text-muted">Status</span>
               <span className={status.text}>{status.label}</span>
             </div>
-            {task.dueDate && (
-              <div className="flex justify-between">
-                <span className="text-muted">Due Date</span>
-                <span>
-                  {new Date(task.dueDate).toLocaleDateString("en-GB", {
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </span>
-              </div>
-            )}
+            <div className="flex justify-between">
+              <span className="text-muted">Start</span>
+              <span>
+                {new Date(task.startDate).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-muted">End</span>
+              <span>
+                {new Date(task.endDate).toLocaleDateString("en-GB", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
             {task.assignee && (
               <div className="flex justify-between">
-                <span className="text-muted">Assignee</span>
+                <span className="text-muted">Owner</span>
                 <span>{task.assignee}</span>
               </div>
             )}
           </div>
         </div>
 
-        {/* Subtasks */}
-        <div className="space-y-3 text-sm">
-          <h4 className="font-semibold text-xs uppercase tracking-wide text-muted">
-            Subtasks ({subtasks.length})
-          </h4>
-          {subtasks.length > 0 ? (
-            <div className="space-y-2">
-              {subtasks.map((st) => {
-                const stStatus = statusStyles[st.status] ?? statusStyles.TODO;
-                return (
-                  <div
-                    key={st.id}
-                    className="flex items-center gap-2 rounded-lg border border-border p-2.5"
-                  >
-                    <span
-                      className={`h-2 w-2 shrink-0 rounded-full ${priorityDot[st.priority]}`}
-                    />
-                    <span className={`flex-1 text-xs ${st.status === "DONE" ? "line-through text-muted" : ""}`}>
-                      {st.title}
-                    </span>
-                    <span className={`text-[10px] font-medium ${stStatus.text}`}>
-                      {stStatus.label}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-xs text-muted">No subtasks yet.</p>
-          )}
-        </div>
+        {task.context && (
+          <div className="space-y-3 text-sm">
+            <h4 className="font-semibold text-xs uppercase tracking-wide text-muted">
+              Context
+            </h4>
+            <p className="text-xs text-muted leading-relaxed">
+              {task.context.reason}
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -18,8 +18,9 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
   const topTasks = getTopLevelTasks(project);
   const done = topTasks.filter((t) => t.status === "DONE").length;
   const inProgress = topTasks.filter((t) => t.status === "IN_PROGRESS").length;
+  const waiting = topTasks.filter((t) => t.status === "WAITING").length;
   const todo = topTasks.filter(
-    (t) => t.status !== "DONE" && t.status !== "IN_PROGRESS" && t.status !== "CANCELLED"
+    (t) => t.status === "TODO"
   ).length;
 
   return (
@@ -82,6 +83,7 @@ export default async function ProjectPage({ params }: ProjectPageProps) {
             {[
               { label: "To Do", count: todo, color: "bg-muted" },
               { label: "In Progress", count: inProgress, color: "bg-accent" },
+              { label: "Waiting", count: waiting, color: "bg-warning" },
               { label: "Done", count: done, color: "bg-success" },
             ].map((s) => (
               <div key={s.label} className="flex items-center justify-between">

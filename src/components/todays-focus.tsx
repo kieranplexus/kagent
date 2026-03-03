@@ -58,7 +58,7 @@ export function TodaysFocus({ items }: { items: FocusTask[] }) {
           return (
             <Link
               key={task.id}
-              href={`/projects/${task.projectId}`}
+              href={`/projects/${task.projectId}/timeline`}
               className="flex items-start gap-4 px-5 py-3.5 transition-colors hover:bg-accent/5"
             >
               {/* Rank + priority dot */}
@@ -113,9 +113,9 @@ export function TodaysFocus({ items }: { items: FocusTask[] }) {
                     {project.name}
                   </span>
                 </div>
-                {task.dueDate && (
+                {task.endDate && (
                   <p className="mt-0.5 text-[10px] text-muted">
-                    {new Date(task.dueDate).toLocaleDateString("en-GB", {
+                    {new Date(task.endDate).toLocaleDateString("en-GB", {
                       day: "numeric",
                       month: "short",
                     })}

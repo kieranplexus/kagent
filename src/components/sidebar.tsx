@@ -11,14 +11,9 @@ const navigation = [
     icon: "⬡",
   },
   {
-    label: "Projects",
-    href: "/projects",
+    label: "Timeline",
+    href: "/projects/oracle-health/timeline",
     icon: "◫",
-  },
-  {
-    label: "Personal",
-    href: "/personal",
-    icon: "◉",
   },
   {
     label: "Settings",

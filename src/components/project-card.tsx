@@ -13,6 +13,7 @@ const statusBadge: Record<string, string> = {
   TODO: "text-muted",
   IN_PROGRESS: "text-accent",
   IN_REVIEW: "text-warning",
+  WAITING: "text-warning",
   DONE: "text-success line-through opacity-60",
   CANCELLED: "text-muted line-through opacity-40",
 };
@@ -72,9 +73,9 @@ export function ProjectCard({ project }: { project: MockProject }) {
               >
                 {task.title}
               </span>
-              {task.dueDate && (
+              {task.endDate && (
                 <span className="ml-auto shrink-0 text-[10px] text-muted">
-                  {new Date(task.dueDate).toLocaleDateString("en-GB", {
+                  {new Date(task.endDate).toLocaleDateString("en-GB", {
                     day: "numeric",
                     month: "short",
                   })}
